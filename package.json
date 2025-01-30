@@ -1,10 +1,13 @@
 {
   "name": "managed-form",
   "version": "1.0.0",
+  "description": "My nuxt composable managed-form",
   "author": {
     "name": "Aly Akbar Al Mutsana",
     "url": "https://github.com/akbarsury"
   },
+  "repository": "github:akbarsury/nuxt-managed-form",
+  "license": "Apache-2.0",
   "main": "src/index.ts",
   "dependencies": {
     "vee-validate": "^4.15.0",
