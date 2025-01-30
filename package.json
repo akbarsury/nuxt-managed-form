@@ -1,0 +1,14 @@
+{
+  "name": "managed-form",
+  "version": "1.0.0",
+  "author": {
+    "name": "Aly Akbar Al Mutsana",
+    "url": "https://github.com/akbarsury"
+  },
+  "main": "src/index.ts",
+  "dependencies": {
+    "vee-validate": "^4.15.0",
+    "vue": "^3.5.13",
+    "zod": "^3.24.1"
+  }
+}

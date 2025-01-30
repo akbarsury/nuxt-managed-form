@@ -1,4 +1,5 @@
 import { useForm as veeUseForm, useField as veeUseField } from 'vee-validate'
+import type { UnwrapNestedRefs } from 'vue';
 import z, { type ZodType } from 'zod';
 
 export type FormsSchema = Record<string, FormSchema>
@@ -28,19 +29,21 @@ export class UseForm<
     Fields extends object = Record<KeyOfS, FieldObj>
 > {
 
-    constructor(schema: S) {
+    constructor(private name: string, schema: S, anyOptions?: Omit<Parameters<typeof useForm>, "name" | "validationSchema">) {
         this.fieldKeys = Object.keys(schema) as KeyOfS[]
-        this.form = useForm({ validationSchema: toTypedSchema(z.object(schema)) })
+        this.form = useForm({ name, validationSchema: toTypedSchema(z.object(schema)), ...anyOptions })
         Object.assign(this.fields, Object.fromEntries((this.fieldKeys).map((key) => {
-            let [x, y] = this.form.defineField(ref(key))
-            return [key, { val: x, attr: y }]
+            let [val, attr] = this.useField(key)
+            let errors = computed(() => (this.form as ReturnType<typeof useForm>).errorBag.value[key as string])
+            return [key, { val, attr, errors }]
         })))
     }
 
     // property
-    form: ReturnType<typeof useForm>;
-    private fieldKeys: KeyOfS[] | null = null;
-    fields: Fields = reactive({}) as Fields;
+    private fieldKeys: KeyOfS[]
+    form: Omit<ReturnType<typeof useForm>, "meta" | "values" | "errors" | "errorBag" | "controlledValues">
+    meta = computed(() => (this.form as ReturnType<typeof useForm>).meta)
+    fields: UnwrapNestedRefs<Fields> = reactive({} as Fields)
 
     // method
     useField = <T extends KeyOfS>(field: T) => this.form.defineField(ref(field))
