@@ -1,11 +1,50 @@
-import { useForm as veeUseForm, useField as veeUseField } from 'vee-validate'
-import type { UnwrapNestedRefs } from 'vue';
+import { useForm as veeUseForm, type BaseFieldProps, type GenericObject } from 'vee-validate'
+import { computed, ref, type UnwrapNestedRefs } from 'vue';
 import z, { type ZodType } from 'zod';
 
 export type FormsSchema = Record<string, FormSchema>
 type FormSchema = Record<string, ZodType>
 
-type FieldObj<TVal extends string | number | boolean = string, TAttr extends object = {}> = { val: TVal, attr: TAttr }
+type FieldObj<
+    TVal extends globalThis.Ref<string | number | boolean> = globalThis.Ref<string>,
+    TBind extends ManagedFormFieldDefaultProps["bind"] = ManagedFormFieldDefaultProps["bind"],
+    TProps extends ManagedFormFieldDefaultProps["props"] = ManagedFormFieldDefaultProps["props"],
+    TErr extends globalThis.ComputedRef<string[]> = globalThis.ComputedRef<string[]>
+> = {
+    val: TVal,
+    bind: TBind,
+    props: TProps,
+    errors: TErr
+}
+
+class ManagedFormFieldDefaultProps<T extends (BaseFieldProps & GenericObject) = BaseFieldProps & GenericObject> {
+    constructor(props: T) {
+        this.props = {
+            ...props,
+            ...this.props
+        }
+    }
+
+    private _focus: globalThis.Ref<boolean> = ref(false)
+
+    props = {
+        focus: computed(() => this._focus.value)
+    }
+
+    bind = {
+        onInput: (cb: void) => {
+            cb
+            this._focus.value = true
+        },
+        onBlur: (cb: void) => {
+            cb
+            this._focus.value = false
+        },
+        onChange: (cb: void) => {
+            cb
+        }
+    }
+}
 
 export class ManagedForm<
     S extends FormsSchema,
@@ -35,14 +74,20 @@ export class UseForm<
         Object.assign(this.fields, Object.fromEntries((this.fieldKeys).map((key) => {
             let [val, attr] = this.useField(key)
             let errors = computed(() => (this.form as ReturnType<typeof useForm>).errorBag.value[key as string])
-            return [key, { val, attr, errors }]
+            return [key, {
+                val,
+                ...(new ManagedFormFieldDefaultProps({ ...toValue(attr) })),
+                errors
+            }]
         })))
     }
 
     // property
     private fieldKeys: KeyOfS[]
     form: Omit<ReturnType<typeof useForm>, "meta" | "values" | "errors" | "errorBag" | "controlledValues">
-    meta = computed(() => (this.form as ReturnType<typeof useForm>).meta)
+    meta = computed(() => (this.form as ReturnType<typeof useForm>).meta.value)
+    values = computed(() => (this.form as ReturnType<typeof useForm>).values)
+    isValid = computed(() => this.meta.value.valid)
     fields: UnwrapNestedRefs<Fields> = reactive({} as Fields)
 
     // method
